@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatar    String?
+  
+  // Preferences
+  darkMode        Boolean @default(false)
+  notifications   Boolean @default(true)
+  language        String  @default("en")
+  timezone        String  @default("UTC")
+  
+  // Gamification
+  totalTasks      Int @default(0)
+  completedTasks  Int @default(0)
+  currentStreak   Int @default(0)
+  longestStreak   Int @default(0)
+  totalPoints     Int @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  tasks     Task[]
+  reminders Reminder[]
+  categories Category[]
+  badges    UserBadge[]
+  
+  @@map("users")
+}
+
+model Category {
+  id     String @id @default(cuid())
+  name   String
+  color  String @default("#4A90E2")
+  icon   String?
+  userId String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks Task[]
+  
+  @@unique([name, userId])
+  @@map("categories")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  completed   Boolean   @default(false)
+  priority    Priority  @default(MEDIUM)
+  
+  // Dates
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Metadata
+  estimatedTime String?
+  actualTime    String?
+  tags          String[] // Array of tag strings
+  
+  // Relations
+  userId     String
+  categoryId String?
+  
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  reminders Reminder[]
+  
+  @@index([userId, completed])
+  @@index([userId, dueDate])
+  @@index([userId, priority])
+  @@map("tasks")
+}
+
+model Reminder {
+  id          String      @id @default(cuid())
+  title       String
+  message     String?
+  scheduledAt DateTime
+  triggered   Boolean     @default(false)
+  snoozed     Boolean     @default(false)
+  snoozeCount Int         @default(0)
+  
+  // Reminder settings
+  type        ReminderType @default(PUSH)
+  recurring   Boolean      @default(false)
+  recurringPattern String? // "daily", "weekly", "monthly", etc.
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userId String
+  taskId String?
+  
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, scheduledAt])
+  @@index([scheduledAt, triggered])
+  @@map("reminders")
+}
+
+model Badge {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String
+  icon        String
+  condition   String // JSON string describing unlock condition
+  points      Int    @default(0)
+  
+  createdAt DateTime @default(now())
+  
+  // Relations
+  users UserBadge[]
+  
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String @id @default(cuid())
+  userId   String
+  badgeId  String
+  unlockedAt DateTime @default(now())
+  
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReminderType {
+  PUSH
+  EMAIL
+  SMS
+}

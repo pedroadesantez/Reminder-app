@@ -1,0 +1,64 @@
+{
+  "name": "planner-reminder-app",
+  "version": "1.0.0",
+  "description": "A modern, cross-platform Planner & Reminder App with PostgreSQL backend",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && expo build:web",
+    "build:backend": "cd backend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:frontend": "cd frontend && npm start",
+    "start:backend": "cd backend && npm start",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "setup": "npm install && npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:backend": "cd backend && npm install && npx prisma generate",
+    "db:migrate": "cd backend && npx prisma db push",
+    "db:studio": "cd backend && npx prisma studio",
+    "db:reset": "cd backend && npx prisma db reset",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf node_modules .expo dist web-build",
+    "clean:backend": "cd backend && rm -rf node_modules dist",
+    "postinstall": "npm run setup:frontend && npm run setup:backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "planner",
+    "reminder",
+    "todo",
+    "react-native",
+    "expo",
+    "nodejs",
+    "postgresql",
+    "mobile-app"
+  ],
+  "author": "Planner App Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/planner-reminder-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/planner-reminder-app/issues"
+  },
+  "homepage": "https://github.com/your-username/planner-reminder-app#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
