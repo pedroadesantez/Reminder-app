@@ -46,6 +46,10 @@ const WorkingPlannerScreen = ({ navigation }) => {
     type: 'meeting',
     color: '#4CAF50',
   });
+  const [buttonFeedback, setButtonFeedback] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Get today's events
   const todayEvents = events[selectedDate] || [];
@@ -195,7 +199,16 @@ const WorkingPlannerScreen = ({ navigation }) => {
         <Text style={[styles.eventTitle, { color: theme.text }]}>{event.title}</Text>
         <Text style={[styles.eventType, { color: theme.textSecondary }]}>{event.type}</Text>
       </View>
-      <Icon name="chevron-right" size={24} color={theme.textSecondary} />
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedEventForEdit(event);
+          setShowEditModal(true);
+        }}
+        style={styles.eventArrow}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Icon name="chevron-right" size={24} color={theme.textSecondary} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -206,6 +219,39 @@ const WorkingPlannerScreen = ({ navigation }) => {
       setEvents(updatedEvents);
       Alert.alert('Success', 'Event deleted successfully');
     }
+  };
+
+  const handleEditEvent = (updatedEvent) => {
+    const updatedEvents = { ...events };
+    if (updatedEvents[selectedDate]) {
+      const eventIndex = updatedEvents[selectedDate].findIndex(e => e.id === updatedEvent.id);
+      if (eventIndex !== -1) {
+        updatedEvents[selectedDate][eventIndex] = updatedEvent;
+        setEvents(updatedEvents);
+        Alert.alert('Success', 'Event updated successfully');
+      }
+    }
+    setShowEditModal(false);
+    setSelectedEventForEdit(null);
+  };
+
+  const handleDeleteEventFromModal = (eventId) => {
+    console.log('handleDeleteEventFromModal called with eventId:', eventId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteEvent = () => {
+    if (selectedEventForEdit) {
+      console.log('User confirmed deletion');
+      deleteEvent(selectedEventForEdit.id);
+      setShowEditModal(false);
+      setShowDeleteModal(false);
+      setSelectedEventForEdit(null);
+    }
+  };
+
+  const cancelDeleteEvent = () => {
+    setShowDeleteModal(false);
   };
 
   const renderUpcomingEvent = (item, index) => {
@@ -337,8 +383,8 @@ const WorkingPlannerScreen = ({ navigation }) => {
           </ScrollView>
         </View>
 
-        {/* Quick Actions - WORKING BUTTONS */}
-        <View style={styles.quickActions}>
+        {/* Quick Actions - FIXED BUTTONS */}
+        <View style={[styles.quickActions, { pointerEvents: 'box-none' }]}>
           <TouchableOpacity
             style={[styles.quickActionButton, { backgroundColor: '#667eea' }]}
             onPress={() => setShowReminderModal(true)}
@@ -350,20 +396,36 @@ const WorkingPlannerScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.quickActionButton, { backgroundColor: '#f093fb' }]}
-            onPress={handleCreateTask}
-            activeOpacity={0.8}
+            onPress={() => {
+              console.log('CREATE TASK CLICKED! - Redirecting immediately...');
+              navigation.navigate('Tasks');
+            }}
+            activeOpacity={0.6}
+            accessible={true}
+            accessibilityLabel="Create Task Button"
+            testID="create-task-button"
           >
-            <Icon name="event-note" size={24} color="#FFF" />
-            <Text style={styles.quickActionText}>Create Task</Text>
+            <Icon name="event-note" size={24} color="#FFF" pointerEvents="none" />
+            <Text style={styles.quickActionText} pointerEvents="none">Create Task</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.quickActionButton, { backgroundColor: '#4CAF50' }]}
-            onPress={handleTeamView}
-            activeOpacity={0.8}
+            onPress={() => {
+              console.log('TEAM VIEW CLICKED!');
+              Alert.alert(
+                '👥 Team View',
+                'Team collaboration features coming soon!\n\n• Share calendars with teammates\n• Collaborative task management\n• Team meeting scheduling\n• Progress tracking',
+                [{ text: 'Got it!', style: 'default' }]
+              );
+            }}
+            activeOpacity={0.6}
+            accessible={true}
+            accessibilityLabel="Team View Button"
+            testID="team-view-button"
           >
-            <Icon name="people" size={24} color="#FFF" />
-            <Text style={styles.quickActionText}>Team View</Text>
+            <Icon name="people" size={24} color="#FFF" pointerEvents="none" />
+            <Text style={styles.quickActionText} pointerEvents="none">Team View</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -565,6 +627,175 @@ const WorkingPlannerScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Event Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                ✏️ Edit Event
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowEditModal(false)}
+                style={styles.closeButton}
+              >
+                <Icon name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedEventForEdit && (
+              <>
+                <TextInput
+                  style={[styles.input, {
+                    backgroundColor: theme.background,
+                    color: theme.text,
+                    borderColor: theme.border
+                  }]}
+                  placeholder="Event title"
+                  placeholderTextColor={theme.textSecondary}
+                  value={selectedEventForEdit.title}
+                  onChangeText={(text) =>
+                    setSelectedEventForEdit({ ...selectedEventForEdit, title: text })
+                  }
+                />
+
+                <View style={styles.timeContainer}>
+                  <Text style={[styles.timeLabel, { color: theme.text }]}>Time:</Text>
+                  <TextInput
+                    style={[styles.timeInput, {
+                      backgroundColor: theme.background,
+                      color: theme.text,
+                      borderColor: theme.border
+                    }]}
+                    placeholder="09:00 AM"
+                    placeholderTextColor={theme.textSecondary}
+                    value={selectedEventForEdit.time}
+                    onChangeText={(text) =>
+                      setSelectedEventForEdit({ ...selectedEventForEdit, time: text })
+                    }
+                  />
+                </View>
+
+                <View style={styles.repeatRow}>
+                  <Text style={[styles.repeatLabel, { color: theme.text }]}>Event Type:</Text>
+                  <View style={styles.repeatOptions}>
+                    {[
+                      { key: 'meeting', label: 'Meeting', color: '#4CAF50' },
+                      { key: 'work', label: 'Work', color: '#FF5252' },
+                      { key: 'personal', label: 'Personal', color: '#2196F3' },
+                      { key: 'other', label: 'Other', color: '#9C27B0' }
+                    ].map((option) => (
+                      <TouchableOpacity
+                        key={option.key}
+                        style={[
+                          styles.repeatOption,
+                          {
+                            borderColor: theme.border,
+                            backgroundColor: selectedEventForEdit.type === option.key ? option.color : 'transparent'
+                          },
+                          selectedEventForEdit.type === option.key && {
+                            borderColor: option.color
+                          }
+                        ]}
+                        onPress={() =>
+                          setSelectedEventForEdit({
+                            ...selectedEventForEdit,
+                            type: option.key,
+                            color: option.color
+                          })
+                        }
+                      >
+                        <Text style={[
+                          styles.repeatOptionText,
+                          { color: selectedEventForEdit.type === option.key ? '#fff' : theme.text }
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.editButtonRow}>
+                  <TouchableOpacity
+                    style={[styles.editButton, styles.updateButton, { backgroundColor: theme.primary }]}
+                    onPress={() => handleEditEvent(selectedEventForEdit)}
+                    disabled={!selectedEventForEdit.title.trim()}
+                  >
+                    <Icon name="save" size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.editButtonText}>Update Event</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.editButton, styles.deleteButton, { borderColor: theme.error }]}
+                    onPress={() => {
+                      console.log('DELETE BUTTON CLICKED!', selectedEventForEdit.id);
+                      handleDeleteEventFromModal(selectedEventForEdit.id);
+                    }}
+                    activeOpacity={0.7}
+                    accessible={true}
+                    accessibilityLabel="Delete Event Button"
+                  >
+                    <Icon name="delete" size={20} color={theme.error} style={{ marginRight: 8 }} />
+                    <Text style={[styles.editButtonText, { color: theme.error }]}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={[styles.deleteModalContent, { backgroundColor: theme.surface }]}>
+            <View style={styles.deleteIconContainer}>
+              <View style={[styles.deleteIconCircle, { backgroundColor: `${theme.error}20` }]}>
+                <Icon name="delete-forever" size={40} color={theme.error} />
+              </View>
+            </View>
+
+            <Text style={[styles.deleteModalTitle, { color: theme.text }]}>
+              Delete Event
+            </Text>
+
+            <Text style={[styles.deleteModalMessage, { color: theme.textSecondary }]}>
+              Are you sure you want to delete "{selectedEventForEdit?.title}"? This action cannot be undone.
+            </Text>
+
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.cancelButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+                onPress={cancelDeleteEvent}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.deleteModalButtonText, { color: theme.text }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.confirmButton, { backgroundColor: theme.error }]}
+                onPress={confirmDeleteEvent}
+                activeOpacity={0.8}
+              >
+                <Icon name="delete" size={18} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={[styles.deleteModalButtonText, { color: '#fff' }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -738,17 +969,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     padding: 15,
     marginBottom: 20,
+    zIndex: 10,
   },
   quickActionButton: {
     width: 100,
-    padding: 15,
+    height: 80,
+    padding: 10,
     borderRadius: 16,
     alignItems: 'center',
-    elevation: 3,
+    justifyContent: 'center',
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    // Force clickability
+    zIndex: 100,
+    position: 'relative',
+    cursor: 'pointer',
+    // Web-specific fixes
+    userSelect: 'none',
+    touchAction: 'manipulation',
   },
   quickActionText: {
     color: '#FFF',
@@ -848,6 +1089,116 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  feedbackContainer: {
+    backgroundColor: 'rgba(0, 200, 0, 0.1)',
+    padding: 12,
+    margin: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 200, 0, 0.3)',
+  },
+  feedbackText: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  eventArrow: {
+    padding: 5,
+  },
+  editButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 10,
+  },
+  editButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+  },
+  updateButton: {
+    // backgroundColor will be set dynamically
+  },
+  deleteButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  deleteModalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 24,
+    padding: 32,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    alignItems: 'center',
+  },
+  deleteIconContainer: {
+    marginBottom: 24,
+  },
+  deleteIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    width: '100%',
+  },
+  deleteModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 16,
+    minHeight: 56,
+  },
+  cancelButton: {
+    borderWidth: 2,
+  },
+  confirmButton: {
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  deleteModalButtonText: {
     fontSize: 16,
     fontWeight: '600',
   },
