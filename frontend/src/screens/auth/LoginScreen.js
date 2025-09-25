@@ -12,23 +12,48 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import Toast from 'react-native-toast-message';
 import { useTheme } from '../../themes/ThemeContext';
-import { loginUser } from '../../store/slices/authSlice';
+import { loginUser, googleSignIn } from '../../store/slices/authSlice';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const { error } = useSelector(state => state.auth);
 
+  // Google OAuth Configuration
+  const useProxy = Platform.select({ web: false, default: true });
+  const redirectUri = AuthSession.makeRedirectUri({ useProxy });
+
+  const clientId = Platform.select({
+    ios: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
+    android: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
+    web: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
+    default: '1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com', // Placeholder
+  });
+
+  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all fields',
+        position: 'top',
+        topOffset: 60,
+      });
       return;
     }
 
@@ -36,9 +61,57 @@ const LoginScreen = ({ navigation }) => {
     try {
       await dispatch(loginUser({ email, password })).unwrap();
     } catch (error) {
-      Alert.alert('Login Failed', error.message);
+      // Error toast is handled in authSlice
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!discovery) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Google Sign-In is not available',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    setGoogleLoading(true);
+    try {
+      const authRequestConfig = {
+        clientId,
+        scopes: ['openid', 'profile', 'email'],
+        redirectUri,
+      };
+
+      const authRequest = new AuthSession.AuthRequest(authRequestConfig);
+      const result = await authRequest.promptAsync(discovery);
+
+      if (result.type === 'success') {
+        const { authentication } = result;
+
+        if (authentication?.idToken) {
+          await dispatch(googleSignIn({ idToken: authentication.idToken })).unwrap();
+        } else {
+          throw new Error('No ID token received from Google');
+        }
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Sign-In Cancelled',
+          text2: 'Google Sign-In was cancelled',
+          position: 'top',
+          topOffset: 60,
+        });
+      }
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+      // Error toast is handled in authSlice
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -123,11 +196,12 @@ const LoginScreen = ({ navigation }) => {
 
             <TouchableOpacity
               style={[styles.socialButton, { borderColor: theme.border }]}
-              onPress={() => {/* Handle Google Sign In */}}
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading || loading}
             >
-              <Icon name="google" size={20} color={theme.text} />
+              <Text style={{ fontSize: 20 }}>G</Text>
               <Text style={[styles.socialButtonText, { color: theme.text }]}>
-                Continue with Google
+                {googleLoading ? 'Signing in...' : 'Continue with Google'}
               </Text>
             </TouchableOpacity>
 

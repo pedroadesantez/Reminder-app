@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { useTheme } from '../../themes/ThemeContext';
 
 const CreateTaskModal = ({ visible, onClose, onSave, task = null }) => {

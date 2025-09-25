@@ -26,7 +26,7 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 7001;
 
 // Rate limiting
 const limiter = rateLimit({
@@ -93,4 +93,13 @@ server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use. Please use a different port or stop the process using port ${PORT}.`);
+    console.log(`💡 Try setting PORT=7001 in your .env file or kill the process using port ${PORT}`);
+  } else {
+    console.error('❌ Server failed to start:', err);
+  }
+  process.exit(1);
 });

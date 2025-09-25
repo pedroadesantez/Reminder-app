@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -65,7 +65,7 @@ model Task {
   title       String
   description String?
   completed   Boolean   @default(false)
-  priority    Priority  @default(MEDIUM)
+  priority    String    @default("MEDIUM")
   
   // Dates
   dueDate     DateTime?
@@ -76,7 +76,7 @@ model Task {
   // Metadata
   estimatedTime String?
   actualTime    String?
-  tags          String[] // Array of tag strings
+  tags          String? // JSON string of tags
   
   // Relations
   userId     String
@@ -102,7 +102,7 @@ model Reminder {
   snoozeCount Int         @default(0)
   
   // Reminder settings
-  type        ReminderType @default(PUSH)
+  type        String       @default("PUSH")
   recurring   Boolean      @default(false)
   recurringPattern String? // "daily", "weekly", "monthly", etc.
   
@@ -151,14 +151,6 @@ model UserBadge {
   @@map("user_badges")
 }
 
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-enum ReminderType {
-  PUSH
-  EMAIL
-  SMS
-}
+// Enums removed for SQLite compatibility
+// Priority values: LOW, MEDIUM, HIGH
+// ReminderType values: PUSH, EMAIL, SMS

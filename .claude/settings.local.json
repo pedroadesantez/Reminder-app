@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo install:*)",
+      "Bash(npx expo start:*)",
+      "Bash(curl:*)",
+      "Bash(npm install)",
+      "Bash(npm run web:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(node_modules/.bin/expo start:*)",
+      "Bash(PORT=7002 npm run dev)",
+      "Bash(expo start:*)",
+      "Bash(taskkill:*)",
+      "Bash(PORT=7002 node server.js)",
+      "Bash(npx prisma generate:*)",
+      "Bash(PORT=7003 npm run dev)",
+      "Bash(npm start)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(npm run generate:*)",
+      "Bash(npx prisma:*)",
+      "Bash(rd:*)",
+      "Bash(PORT=8082 npm run web)",
+      "Bash(npm uninstall:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

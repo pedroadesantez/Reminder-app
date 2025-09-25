@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { useTheme } from '../../themes/ThemeContext';
 import { registerUser } from '../../store/slices/authSlice';
 
@@ -38,28 +39,58 @@ const RegisterScreen = ({ navigation }) => {
     const { displayName, email, password, confirmPassword } = formData;
 
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your name',
+        position: 'top',
+        topOffset: 60,
+      });
       return false;
     }
 
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your email',
+        position: 'top',
+        topOffset: 60,
+      });
       return false;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Password must be at least 6 characters',
+        position: 'top',
+        topOffset: 60,
+      });
       return false;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Passwords do not match',
+        position: 'top',
+        topOffset: 60,
+      });
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a valid email address',
+        position: 'top',
+        topOffset: 60,
+      });
       return false;
     }
 
@@ -72,15 +103,14 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const { displayName, email, password } = formData;
-      await dispatch(registerUser({ 
-        name: displayName.trim(), 
-        email: email.trim(), 
-        password 
+      await dispatch(registerUser({
+        name: displayName.trim(),
+        email: email.trim(),
+        password
       })).unwrap();
-      
-      Alert.alert('Success', 'Account created successfully!');
+      // Success toast is handled in authSlice
     } catch (error) {
-      Alert.alert('Registration Failed', error.message);
+      // Error toast is handled in authSlice
     } finally {
       setLoading(false);
     }
@@ -208,7 +238,7 @@ const RegisterScreen = ({ navigation }) => {
               style={[styles.socialButton, { borderColor: theme.border }]}
               onPress={() => {/* Handle Google Sign Up */}}
             >
-              <Icon name="google" size={20} color={theme.text} />
+              <Text style={{ fontSize: 20 }}>G</Text>
               <Text style={[styles.socialButtonText, { color: theme.text }]}>
                 Continue with Google
               </Text>

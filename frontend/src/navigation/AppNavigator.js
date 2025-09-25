@@ -2,41 +2,18 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { useTheme } from '../themes/ThemeContext';
 import { useSelector } from 'react-redux';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import TasksScreen from '../screens/main/TasksScreen';
 
-// Screens (placeholder components for now)
-const PlannerScreen = () => {
-  const { theme } = useTheme();
-  return (
-    <View style={[styles.screenContainer, { backgroundColor: theme.background }]}>
-      <Text style={[styles.screenText, { color: theme.text }]}>📅 Planner</Text>
-    </View>
-  );
-};
-
-const RemindersScreen = () => {
-  const { theme } = useTheme();
-  return (
-    <View style={[styles.screenContainer, { backgroundColor: theme.background }]}>
-      <Text style={[styles.screenText, { color: theme.text }]}>🔔 Reminders</Text>
-    </View>
-  );
-};
-
-const ProfileScreen = () => {
-  const { theme } = useTheme();
-  return (
-    <View style={[styles.screenContainer, { backgroundColor: theme.background }]}>
-      <Text style={[styles.screenText, { color: theme.text }]}>👤 Profile</Text>
-    </View>
-  );
-};
+// Import additional screens
+import WorkingPlannerScreen from '../screens/main/WorkingPlannerScreen';
+import RemindersScreen from '../screens/main/RemindersScreen';
+import ProfileScreen from '../screens/main/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -97,9 +74,9 @@ const TabNavigator = () => {
         headerTintColor: theme.text,
       })}
     >
-      <Tab.Screen 
-        name="Planner" 
-        component={PlannerScreen}
+      <Tab.Screen
+        name="Planner"
+        component={WorkingPlannerScreen}
         options={{ title: 'Planner' }}
       />
       <Tab.Screen 
@@ -125,8 +102,32 @@ const AppNavigator = () => {
   const { theme } = useTheme();
   const user = useSelector(state => state.auth.user);
 
+  // Configure linking for web
+  const linking = {
+    prefixes: ['http://localhost:8082', 'http://localhost:8081'],
+    config: {
+      screens: {
+        Main: {
+          screens: {
+            Planner: 'planner',
+            Tasks: 'tasks',
+            Reminders: 'reminders',
+            Profile: 'profile',
+          },
+        },
+        Auth: {
+          screens: {
+            Login: 'login',
+            Register: 'register',
+          },
+        },
+      },
+    },
+  };
+
   return (
     <NavigationContainer
+      linking={Platform.OS === 'web' ? linking : undefined}
       theme={{
         dark: theme === 'dark',
         colors: {

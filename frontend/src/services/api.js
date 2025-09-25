@@ -2,8 +2,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API base URL - update this for production
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api'
+const API_BASE_URL = __DEV__
+  ? 'http://localhost:7001/api'
   : 'https://your-production-api.com/api';
 
 // Create axios instance
@@ -93,6 +93,7 @@ export const authAPI = {
   getProfile: () => api.get('/auth/profile'),
   updateProfile: (userData) => api.put('/auth/profile', userData),
   changePassword: (passwordData) => api.post('/auth/change-password', passwordData),
+  googleAuth: (tokenData) => api.post('/auth/google', tokenData),
 };
 
 // Tasks API

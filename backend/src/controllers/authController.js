@@ -2,8 +2,16 @@ const bcrypt = require('bcryptjs');
 const Joi = require('joi');
 const { PrismaClient } = require('@prisma/client');
 const { generateTokens } = require('../middleware/auth');
+const { OAuth2Client } = require('google-auth-library');
 
 const prisma = new PrismaClient();
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
 
 // Validation schemas
 const registerSchema = Joi.object({
@@ -65,7 +73,7 @@ const register = async (req, res) => {
       }
     });
 
-    // Generate token
+    // Generate JWT token
     const { accessToken } = generateTokens(user.id);
 
     res.status(201).json({
@@ -90,9 +98,26 @@ const login = async (req, res) => {
 
     const { email, password } = value;
 
-    // Find user
+    // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        avatar: true,
+        darkMode: true,
+        notifications: true,
+        language: true,
+        timezone: true,
+        totalTasks: true,
+        completedTasks: true,
+        currentStreak: true,
+        longestStreak: true,
+        totalPoints: true,
+        createdAt: true
+      }
     });
 
     if (!user) {
@@ -105,11 +130,11 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate token
-    const { accessToken } = generateTokens(user.id);
-
-    // Return user data without password
+    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
+
+    // Generate JWT token
+    const { accessToken } = generateTokens(user.id);
 
     res.json({
       message: 'Login successful',
@@ -125,6 +150,7 @@ const login = async (req, res) => {
 
 const getProfile = async (req, res) => {
   try {
+    // Get user profile from database
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: {
@@ -248,10 +274,127 @@ const changePassword = async (req, res) => {
   }
 };
 
+const googleAuth = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ error: 'ID token is required' });
+    }
+
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (user) {
+      // Update user with Google info if they don't have it
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId,
+            avatar: picture || user.avatar
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            darkMode: true,
+            notifications: true,
+            language: true,
+            timezone: true,
+            totalTasks: true,
+            completedTasks: true,
+            currentStreak: true,
+            longestStreak: true,
+            totalPoints: true,
+            createdAt: true
+          }
+        });
+      }
+    } else {
+      // Create new user
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          googleId,
+          avatar: picture,
+          password: '' // Empty password for Google users
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          darkMode: true,
+          notifications: true,
+          language: true,
+          timezone: true,
+          totalTasks: true,
+          completedTasks: true,
+          currentStreak: true,
+          longestStreak: true,
+          totalPoints: true,
+          createdAt: true
+        }
+      });
+    }
+
+    // Generate token
+    const { accessToken } = generateTokens(user.id);
+
+    res.json({
+      message: 'Google authentication successful',
+      user,
+      accessToken
+    });
+
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ error: 'Google authentication failed' });
+  }
+};
+
+const googleCallback = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code is required' });
+    }
+
+    // Exchange code for tokens
+    const { tokens } = await googleClient.getToken(code);
+    const { id_token } = tokens;
+
+    // Use the existing googleAuth logic with the ID token
+    req.body = { idToken: id_token };
+    return googleAuth(req, res);
+
+  } catch (error) {
+    console.error('Google callback error:', error);
+    res.status(500).json({ error: 'Google callback failed' });
+  }
+};
+
 module.exports = {
   register,
   login,
   getProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  googleAuth,
+  googleCallback
 };

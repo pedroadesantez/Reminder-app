@@ -3,11 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider, useDispatch } from 'react-redux';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { store } from './src/store';
 import { loadStoredAuth } from './src/store/slices/authSlice';
 import { ThemeProvider } from './src/themes/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { loadAuthToken } from './src/services/api';
 
 // Configure notifications
 Notifications.setNotificationHandler({
@@ -25,14 +26,17 @@ const AppContent = () => {
     // Load stored authentication
     dispatch(loadStoredAuth());
 
-    // Request notification permissions
-    registerForPushNotificationsAsync();
+    // Request notification permissions (only on mobile)
+    if (Platform.OS !== 'web') {
+      registerForPushNotificationsAsync();
+    }
   }, [dispatch]);
 
   return (
     <ThemeProvider>
       <SafeAreaProvider>
         <AppNavigator />
+        <Toast />
         <StatusBar style="auto" />
       </SafeAreaProvider>
     </ThemeProvider>

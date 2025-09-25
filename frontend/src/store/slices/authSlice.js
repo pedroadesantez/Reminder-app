@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authAPI, saveAuthToken, loadAuthToken } from '../../services/api';
+import { showSuccessToast, showErrorToast } from '../../utils/notifications';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -88,6 +89,24 @@ export const updateUserProfile = createAsyncThunk(
   }
 );
 
+export const googleSignIn = createAsyncThunk(
+  'auth/googleSignIn',
+  async ({ idToken }, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.googleAuth({ idToken });
+      const { user, accessToken } = response.data;
+
+      // Save token to storage
+      await saveAuthToken(accessToken);
+
+      return { user, accessToken };
+    } catch (error) {
+      const message = error.response?.data?.error || error.message;
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -120,11 +139,13 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.isInitialized = true;
+        showSuccessToast('Login Successful', 'Welcome back!');
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
         state.isInitialized = true;
+        showErrorToast('Login Failed', action.payload || 'Please try again');
       })
       // Register
       .addCase(registerUser.pending, (state) => {
@@ -136,11 +157,13 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.isInitialized = true;
+        showSuccessToast('Registration Successful', 'Welcome to the app!');
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
         state.isInitialized = true;
+        showErrorToast('Registration Failed', action.payload || 'Please try again');
       })
       // Load stored auth
       .addCase(loadStoredAuth.pending, (state) => {
@@ -165,11 +188,30 @@ const authSlice = createSlice({
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.error = action.payload;
       })
+      // Google Sign In
+      .addCase(googleSignIn.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleSignIn.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.isInitialized = true;
+        showSuccessToast('Google Sign-In Successful', 'Welcome!');
+      })
+      .addCase(googleSignIn.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.isInitialized = true;
+        showErrorToast('Google Sign-In Failed', action.payload || 'Please try again');
+      })
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
         state.accessToken = null;
         state.error = null;
+        showSuccessToast('Logged Out', 'See you next time!');
       });
   },
 });

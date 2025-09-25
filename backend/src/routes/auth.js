@@ -6,12 +6,16 @@ const {
   login,
   getProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  googleAuth,
+  googleCallback
 } = require('../controllers/authController');
 
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/google', googleAuth);
+router.post('/google/callback', googleCallback);
 
 // Protected routes
 router.get('/profile', authenticateToken, getProfile);
